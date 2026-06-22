@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoL Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #13151A; color: #E8E9ED; font-family: 'Inter', sans-serif; min-height: 100vh; padding: 24px 16px 60px; }
+  .wrap { max-width: 660px; margin: 0 auto; }
+  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .08em; color: #3FA9F5; }
+  .rank-badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; border: 1px solid #2A2D36; border-radius: 4px; padding: 3px 8px; }
+  h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; margin-bottom: 6px; }
+  .subtitle { color: #7A7E8C; font-size: 14px; margin-bottom: 20px; }
+  .tabs { display: flex; border-bottom: 1px solid #2A2D36; margin-bottom: 24px; }
+  .tab { background: none; border: none; color: #7A7E8C; font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 10px 4px; margin-right: 20px; cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab.active { color: #E8E9ED; border-bottom-color: #3FA9F5; }
+  .panel { display: none; } .panel.active { display: block; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .field { flex: 1; min-width: 140px; margin-bottom: 16px; }
+  .field.full { flex: none; width: 100%; }
+  label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; margin-bottom: 6px; letter-spacing: .03em; }
+  select, input, textarea { width: 100%; background: #1B1E26; border: 1px solid #2A2D36; color: #E8E9ED; border-radius: 6px; padding: 9px 10px; font-size: 14px; font-family: 'Inter', sans-serif; }
+  textarea { resize: vertical; line-height: 1.5; }
+  .btn { width: 100%; background: #3FA9F5; color: #0B0D11; border: none; border-radius: 6px; padding: 13px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 6px; }
+  .btn:disabled { background: #26303D; color: #7A7E8C; cursor: not-allowed; }
+  .error { background: #2A1F1A; border: 1px solid #E8965A; color: #E8965A; border-radius: 6px; padding: 10px 12px; font-size: 12px; font-family: 'JetBrains Mono', monospace; word-break: break-word; margin-bottom: 12px; display: none; }
+  .info { background: #1A2030; border: 1px solid #2A2D36; color: #7A7E8C; border-radius: 6px; padding: 10px 12px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: none; }
+  .game-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; margin-top: 24px; }
+  .game-item { background: #1B1E26; border: 1px solid #2A2D36; border-radius: 8px; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+  .game-item.selected { background: #1B2535; border-color: #3FA9F5; }
+  .game-champ { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 18px; }
+  .game-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; margin-top: 2px; }
+  .win { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4CAF7D; }
+  .loss { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E8965A; }
+  .context-section { display: none; margin-top: 8px; }
+  /* History */
+  .card-wrap { display: flex; gap: 12px; }
+  .card-rail { display: flex; flex-direction: column; align-items: center; width: 14px; }
+  .card-dot { width: 9px; height: 9px; border-radius: 50%; background: #3FA9F5; margin-top: 18px; flex-shrink: 0; }
+  .card-line { width: 1px; flex: 1; background: #2A2D36; margin-top: 4px; }
+  .card { flex: 1; margin-bottom: 18px; }
+  .card-header { display: flex; justify-content: space-between; align-items: baseline; cursor: pointer; padding-bottom: 4px; }
+  .card-champ { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 19px; margin-right: 10px; }
+  .card-meta-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; }
+  .card-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; white-space: nowrap; }
+  .card-body { background: #1B1E26; border: 1px solid #2A2D36; border-radius: 8px; padding: 16px; margin-top: 8px; display: none; }
+  .card-body.open { display: block; }
+  .analysis-text { white-space: pre-wrap; font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; color: #E8E9ED; }
+  .delete-btn { background: none; border: 1px solid #2A2D36; color: #7A7E8C; border-radius: 5px; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; cursor: pointer; margin-top: 14px; }
+  .empty { color: #7A7E8C; font-size: 14px; text-align: center; padding: 40px 20px; border: 1px dashed #2A2D36; border-radius: 8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="header-top">
+      <span class="eyebrow" id="eyebrow">COACH · ADC</span>
+      <span class="rank-badge" id="rankBadge">Maître</span>
+    </div>
+    <h1>Post-Game Review</h1>
+    <p class="subtitle">Analyse automatique via l'API Riot. Aucun copier-coller.</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" onclick="switchTab('new')">Nouvelle analyse</button>
+    <button class="tab" onclick="switchTab('history')" id="historyTab">Historique (0)</button>
+  </nav>
+
+  <!-- Nouvelle analyse -->
+  <div class="panel active" id="panel-new">
+    <div class="row">
+      <div class="field">
+        <label>RANG</label>
+        <select id="rank" onchange="updateBadges()">
+          <option>Fer</option><option>Bronze</option><option>Argent</option>
+          <option>Or</option><option>Platine</option><option>Émeraude</option>
+          <option>Diamant</option><option selected>Maître</option>
+          <option>Grandmaster</option><option>Challenger</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>RÔLE</label>
+        <select id="role" onchange="updateBadges()">
+          <option>Top</option><option>Jungle</option><option>Mid</option>
+          <option selected>ADC</option><option>Support</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field" style="flex:2">
+        <label>PSEUDO RIOT</label>
+        <input id="gameName" placeholder="ex: clochard trader" />
+      </div>
+      <div class="field" style="flex:1">
+        <label>TAG</label>
+        <input id="tagLine" value="EUW" />
+      </div>
+    </div>
+
+    <div class="error" id="err1"></div>
+    <div class="info" id="info1"></div>
+    <button class="btn" id="btnLoad" onclick="loadGames()">Charger mes dernières parties →</button>
+
+    <!-- Liste des games -->
+    <div id="gameListSection" style="display:none">
+      <label style="margin-top:24px;display:block">SÉLECTIONNE LA GAME À ANALYSER</label>
+      <div class="game-list" id="gameList"></div>
+
+      <div class="context-section" id="contextSection">
+        <div class="field full">
+          <label>TON RESSENTI SUR CETTE GAME (optionnel)</label>
+          <textarea id="context" rows="3" placeholder="ex: J'ai perdu ma lane early, du mal à rentrer dans les teamfights…"></textarea>
+        </div>
+        <div class="error" id="err2"></div>
+        <div class="info" id="info2"></div>
+        <button class="btn" id="btnAnalyze" onclick="analyzeGame()">Analyser cette partie</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historique -->
+  <div class="panel" id="panel-history">
+    <div id="historyList"></div>
+  </div>
+</div>
+
+<script>
+  const PLATFORM = "euw1";
+  let puuid = null;
+  let recentGames = [];
+  let selectedMatchId = null;
+  let history = JSON.parse(localStorage.getItem("lolcoach:history") || "[]");
+
+  function saveHistory() {
+    localStorage.setItem("lolcoach:history", JSON.stringify(history));
+    document.getElementById("historyTab").textContent = `Historique (${history.length})`;
+  }
+
+  function switchTab(t) {
+    document.querySelectorAll(".tab").forEach((b,i) => b.classList.toggle("active", (i===0&&t==="new")||(i===1&&t==="history")));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-"+t).classList.add("active");
+    if (t === "history") renderHistory();
+  }
+
+  function updateBadges() {
+    document.getElementById("eyebrow").textContent = "COACH · " + document.getElementById("role").value.toUpperCase();
+    document.getElementById("rankBadge").textContent = document.getElementById("rank").value;
+  }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.style.display = msg ? "block" : "none";
+  }
+  function showInfo(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg; el.style.display = msg ? "block" : "none";
+  }
+
+  async function loadGames() {
+    const gameName = document.getElementById("gameName").value.trim();
+    const tagLine = document.getElementById("tagLine").value.trim();
+    if (!gameName || !tagLine) { showErr("err1", "Entre ton pseudo et ton tag."); return; }
+    showErr("err1", ""); showInfo("info1", "Recherche du compte…");
+    document.getElementById("btnLoad").disabled = true;
+
+    try {
+      const acc = await apiFetch(`/api/account?gameName=${encodeURIComponent(gameName)}&tagLine=${encodeURIComponent(tagLine)}&platform=${PLATFORM}`);
+      puuid = acc.puuid;
+      showInfo("info1", "Récupération des parties…");
+      const ids = await apiFetch(`/api/matches?puuid=${puuid}&platform=${PLATFORM}&count=10`);
+      showInfo("info1", "Chargement des détails…");
+      const details = await Promise.all(ids.map(id => apiFetch(`/api/match/${id}?platform=${PLATFORM}`)));
+      recentGames = details.map((m, i) => {
+        const p = m.info.participants.find(x => x.puuid === puuid);
+        return { matchId: ids[i], championName: p.championName, win: p.win, kills: p.kills, deaths: p.deaths, assists: p.assists, duration: Math.floor(m.info.gameDuration/60)+"m"+(m.info.gameDuration%60)+"s", rawMatch: m };
+      });
+      showInfo("info1", "");
+      renderGameList();
+      document.getElementById("gameListSection").style.display = "block";
+    } catch(e) {
+      showErr("err1", e.message);
+      showInfo("info1", "");
+    } finally {
+      document.getElementById("btnLoad").disabled = false;
+    }
+  }
+
+  function renderGameList() {
+    const container = document.getElementById("gameList");
+    container.innerHTML = recentGames.map(g => `
+      <div class="game-item" id="gi-${g.matchId}" onclick="selectGame('${g.matchId}')">
+        <div>
+          <div class="game-champ">${g.championName}</div>
+          <div class="game-meta">${g.kills}/${g.deaths}/${g.assists} · ${g.duration}</div>
+        </div>
+        <div class="${g.win ? 'win' : 'loss'}">${g.win ? "VICTOIRE" : "DÉFAITE"}</div>
+      </div>`).join("");
+  }
+
+  function selectGame(matchId) {
+    selectedMatchId = matchId;
+    document.querySelectorAll(".game-item").forEach(el => el.classList.remove("selected"));
+    document.getElementById("gi-"+matchId).classList.add("selected");
+    document.getElementById("contextSection").style.display = "block";
+  }
+
+  async function analyzeGame() {
+    if (!selectedMatchId) { showErr("err2", "Sélectionne une game."); return; }
+    const game = recentGames.find(g => g.matchId === selectedMatchId);
+    const p = game.rawMatch.info.participants.find(x => x.puuid === puuid);
+    const teamId = p.teamId;
+    const team = game.rawMatch.info.participants.filter(x => x.puuid !== puuid && x.teamId === teamId);
+    const enemies = game.rawMatch.info.participants.filter(x => x.teamId !== teamId);
+
+    const matchData = {
+      participant: p,
+      team,
+      enemies,
+      gameDuration: game.rawMatch.info.gameDuration,
+    };
+
+    showErr("err2", ""); showInfo("info2", "Analyse en cours…");
+    document.getElementById("btnAnalyze").disabled = true;
+
+    try {
+      const result = await apiFetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rank: document.getElementById("rank").value,
+          role: document.getElementById("role").value,
+          context: document.getElementById("context").value,
+          matchData,
+        }),
+      });
+
+      const entry = {
+        id: Date.now().toString(36),
+        date: new Date().toISOString(),
+        rank: document.getElementById("rank").value,
+        role: document.getElementById("role").value,
+        champion: p.championName,
+        win: p.win,
+        analysis: result.analysis,
+      };
+      history.unshift(entry);
+      saveHistory();
+      showInfo("info2", "");
+      switchTab("history");
+      renderHistory(entry.id);
+      // reset
+      selectedMatchId = null;
+      document.getElementById("gameListSection").style.display = "none";
+      document.getElementById("contextSection").style.display = "none";
+      document.getElementById("context").value = "";
+    } catch(e) {
+      showErr("err2", e.message);
+      showInfo("info2", "");
+    } finally {
+      document.getElementById("btnAnalyze").disabled = false;
+    }
+  }
+
+  async function apiFetch(url, opts) {
+    const res = await fetch(url, opts);
+    const text = await res.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error("Réponse non-JSON: " + text.slice(0,100)); }
+    if (!res.ok) throw new Error(data.error || JSON.stringify(data).slice(0,100));
+    return data;
+  }
+
+  function renderHistory(openId) {
+    const container = document.getElementById("historyList");
+    if (history.length === 0) {
+      container.innerHTML = '<div class="empty">Aucune game analysée. Lance ta première analyse.</div>';
+      return;
+    }
+    container.innerHTML = history.map((g, i) => {
+      const d = new Date(g.date);
+      const dateStr = d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short"});
+      const timeStr = d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      return `
+      <div class="card-wrap">
+        <div class="card-rail">
+          <div class="card-dot"></div>
+          ${i < history.length-1 ? '<div class="card-line"></div>' : ''}
+        </div>
+        <div class="card">
+          <div class="card-header" onclick="toggleCard('${g.id}')">
+            <div>
+              <span class="card-champ">${g.champion}</span>
+              <span class="card-meta-text">${g.role} · ${g.rank}</span>
+            </div>
+            <span class="card-date">${dateStr} · ${timeStr}</span>
+          </div>
+          <div class="card-body ${openId===g.id?'open':''}" id="cb-${g.id}">
+            <div class="analysis-text">${g.analysis}</div>
+            <button class="delete-btn" onclick="deleteEntry('${g.id}')">Supprimer</button>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function toggleCard(id) {
+    const el = document.getElementById("cb-"+id);
+    el.classList.toggle("open");
+  }
+
+  function deleteEntry(id) {
+    history = history.filter(g => g.id !== id);
+    saveHistory();
+    renderHistory();
+  }
+
+  // Init
+  updateBadges();
+  saveHistory();
+</script>
+</body>
+</html>
