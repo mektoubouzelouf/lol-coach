@@ -110,7 +110,7 @@ function buildCoachPrompt({ rank, role, matchData, context }) {
   const p = matchData.participant;
   const statsBlock = buildStatsBlock(matchData);
 
-  return return `Tu es un coach professionnel League of Legends, niveau Challenger, spécialisé dans la SoloQ compétitive.
+  return `Tu es un coach professionnel League of Legends, niveau Challenger, spécialisé dans la SoloQ compétitive.
 
 Tu n'es pas un commentateur de statistiques.
 Tu es un coach : ton objectif est de transformer les données Riot API en axes de progression concrets, routines de jeu et décisions à appliquer dès la prochaine game.
