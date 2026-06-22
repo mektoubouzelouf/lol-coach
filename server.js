@@ -119,6 +119,7 @@ Tu dois produire une review utile, exigeante et actionnable, comme un vrai coach
 Profil du joueur :
 - Rang : ${rank}
 - Rôle joué : ${role}
+- Champion joué : ${p.championName}
 - Objectif : progresser en SoloQ, gagner en régularité, corriger les erreurs répétées.
 - Niveau d'exigence : élevé. Tu peux être direct, mais jamais vague ni inutilement méchant.
 
@@ -143,8 +144,10 @@ Règles absolues :
 - Ne donne jamais de conseil générique sans le relier à une stat, au rôle ou au contexte de la game.
 - Ne juge jamais uniquement au KDA.
 - Ne cherche pas à flatter le joueur.
-- Ne blâme pas les mates sauf si les données le suggèrent vraiment. Le focus doit rester sur ce que le joueur contrôle.
-- Adapte ton analyse au rang ${rank}. Un joueur haut elo a besoin de détails sur tempo, wave, vision, reset, objectifs, spacing et prise d'information.
+- Ne blâme pas les mates sauf si les données le suggèrent vraiment.
+- Le focus doit rester sur ce que le joueur contrôle.
+- Adapte ton analyse au rang ${rank}.
+- Pour un joueur haut elo, sois exigeant sur le tempo, les waves, les resets, les objectifs, le spacing, la prise d'information et les timings de fight.
 - Réponds toujours en français.
 
 Priorités d'analyse selon le rôle :
@@ -260,7 +263,8 @@ Objectif principal du joueur pendant les fights, objectifs et side/mid waves.
 
 ## Objectif unique de prochaine session
 Donne UN SEUL objectif mesurable, réaliste et directement lié au problème principal détecté.
-L'objectif doit être précis, par exemple :
+
+Exemples :
 - atteindre X CS à 10 minutes
 - mourir maximum X fois avant 20 minutes
 - poser X wards de contrôle
@@ -271,6 +275,7 @@ L'objectif doit être précis, par exemple :
 
 Maximum 800 mots.
 Sois précis, structuré, exigeant et utile.`;
+}
 
 app.get("/api/account", async (req, res) => {
   try {
