@@ -66,12 +66,8 @@ app.get("/api/account", async (req, res) => {
   try {
     const { gameName, tagLine, platform = "euw1" } = req.query;
     if (!gameName || !tagLine) return res.status(400).json({ error: "gameName et tagLine requis" });
-
     const region = PLATFORM_TO_REGION[platform] || "europe";
-    const data = await riotFetch(
-      `https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`
-    );
-
+    const data = await riotFetch(`https://${region}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`);
     res.json(data);
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
@@ -82,12 +78,8 @@ app.get("/api/matches", async (req, res) => {
   try {
     const { puuid, platform = "euw1", count = 10 } = req.query;
     if (!puuid) return res.status(400).json({ error: "puuid requis" });
-
     const region = PLATFORM_TO_REGION[platform] || "europe";
-    const data = await riotFetch(
-      `https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`
-    );
-
+    const data = await riotFetch(`https://${region}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=${count}`);
     res.json(data);
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
@@ -99,16 +91,38 @@ app.get("/api/match/:matchId", async (req, res) => {
     const { matchId } = req.params;
     const { platform = "euw1" } = req.query;
     const region = PLATFORM_TO_REGION[platform] || "europe";
-
-    const data = await riotFetch(
-      `https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}`
-    );
-
+    const data = await riotFetch(`https://${region}.api.riotgames.com/lol/match/v5/matches/${matchId}`);
     res.json(data);
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
   }
 });
+
+function compactParticipant(p) {
+  const gameSeconds = safeNumber(p.gameEndedInEarlySurrender ? 0 : undefined);
+  return {
+    champion: p.championName,
+    role: p.teamPosition || p.individualPosition || "UNKNOWN",
+    win: p.win,
+    kda: `${p.kills}/${p.deaths}/${p.assists}`,
+    kills: p.kills,
+    deaths: p.deaths,
+    assists: p.assists,
+    cs: (p.totalMinionsKilled || 0) + (p.neutralMinionsKilled || 0),
+    gold: p.goldEarned,
+    damageToChampions: p.totalDamageDealtToChampions,
+    damageTaken: p.totalDamageTaken,
+    visionScore: p.visionScore,
+    wardsPlaced: p.wardsPlaced,
+    wardsKilled: p.wardsKilled,
+    controlWardsBought: p.visionWardsBoughtInGame,
+    towersDestroyed: p.turretKills || p.turretsKilled || 0,
+    inhibitorsDestroyed: p.inhibitorKills || 0,
+    summoners: [p.summoner1Id, p.summoner2Id],
+    items: [p.item0, p.item1, p.item2, p.item3, p.item4, p.item5, p.item6].filter(Boolean),
+    level: p.champLevel,
+  };
+}
 
 function buildStatsBlock({ rank, role, queueLabel, queueType, matchData }) {
   const p = matchData.participant;
@@ -117,8 +131,11 @@ function buildStatsBlock({ rank, role, queueLabel, queueType, matchData }) {
   const csPerMin = durationMin ? (cs / durationMin).toFixed(1) : "0.0";
   const dpm = durationMin ? Math.round((p.totalDamageDealtToChampions || 0) / durationMin) : 0;
   const gpm = durationMin ? Math.round((p.goldEarned || 0) / durationMin) : 0;
-
+  const teamKills = (matchData.participant?.teamId ? matchData.alliesFull || [] : [])
+    .reduce((sum, player) => sum + (player.kills || 0), p.kills || 0);
+  const kp = teamKills > 0 ? Math.round(((p.kills + p.assists) / teamKills) * 100) : null;
   const queue = queueLabel || getQueueLabel(matchData.queueId).label;
+
   const allies = (matchData.team || []).map(t => t.championName).join(", ");
   const enemies = (matchData.enemies || []).map(e => e.championName).join(", ");
 
@@ -135,6 +152,7 @@ Dégâts champions: ${p.totalDamageDealtToChampions} (${dpm}/min)
 Dégâts subis: ${p.totalDamageTaken}
 Vision: ${p.visionScore}, wards posées: ${p.wardsPlaced}, wards détruites: ${p.wardsKilled}, pinks achetées: ${p.visionWardsBoughtInGame}
 Tours détruites: ${p.turretKills || p.turretsKilled || 0}, inhibiteurs: ${p.inhibitorKills || 0}
+Kill participation estimée: ${kp !== null ? kp + "%" : "non calculable"}
 Items IDs: ${[p.item0,p.item1,p.item2,p.item3,p.item4,p.item5,p.item6].filter(Boolean).join(", ") || "non fourni"}
 Équipe alliée: ${allies || "non fourni"}
 Équipe adverse: ${enemies || "non fourni"}`;
@@ -146,8 +164,8 @@ function buildCoachPrompt({ rank, role, queueType, queueLabel, matchData, contex
 
   return `Tu es un coach professionnel League of Legends niveau Challenger, spécialisé SoloQ.
 
-Mission : produire une review express utile, compacte et actionnable à partir des données Riot API.
-Tu n'es pas un commentateur OP.GG. Tu dois transformer les stats en décisions concrètes pour la prochaine game.
+Mission : générer une review express compacte, critique et actionnable à partir des données Riot API.
+Tu n'es PAS un commentateur OP.GG. Tu dois pointer les erreurs probables et donner des corrections concrètes.
 
 Profil :
 - Rang : ${rank || "Non précisé"}
@@ -165,110 +183,69 @@ Ressenti joueur :
 ${context || "aucun ressenti donné"}
 """
 
-Règles de coaching :
-- Tu n'as pas vu la VOD : n'invente aucun fight précis, aucun timing exact, aucune action non prouvée.
-- Maximum 20% lecture des stats, 80% coaching concret.
-- Ne commente pas toutes les stats : choisis uniquement les 3 signaux les plus utiles.
-- Chaque axe doit donner une règle claire applicable dès la prochaine game.
-- Si la game est bonne, cherche l'optimisation : conversion d'avance, tempo, fermeture de game, régularité.
-- Si la game est mauvaise, priorise ce qui est le plus contrôlable : deaths, wave, vision, reset, objectifs, fight selection.
-- Adapte l'analyse au rôle ${role || "Non précisé"}.
-- SoloQ : focus LP, autonomie, erreurs punissables, tempo individuel.
-- Flex : focus coordination, objectifs, communication et exécution collective.
-- Normal : focus apprentissage, champion mastery et habitudes individuelles.
+Règles strictes :
+- Tu n'as pas vu la VOD : n'invente aucun timing, fight précis ou action non prouvée.
+- Chaque axe doit commencer par une ERREUR probable contrôlable par le joueur.
+- Si la game est gagnée, critique quand même : fermeture de game, conversion d'avance, tempo, régularité.
+- Si la game est perdue, priorise l'erreur la plus contrôlable : deaths, wave, reset, vision, fight selection, objectif.
+- Maximum 20% lecture de stats, 80% corrections concrètes.
+- Ne commente que 3 signaux clés.
+- Texte court, direct, dur mais utile.
+- Adapte au rôle ${role || "Non précisé"}.
+- SoloQ : focus autonomie, LP, tempo individuel, erreurs punissables.
+- Flex : focus coordination, objectifs, exécution collective.
+- Normal : focus apprentissage et mauvaises habitudes.
 
-Rôles :
-- Top : waves, trades, side lane, TP, pression, morts sur gank.
-- Jungle : clear, pathing, tracking, objectifs, conversion kill -> objectif.
-- Mid : prio, roam après push, influence jungle/sides, deaths évitables.
-- ADC : farm utile, resets, mid game waves, DPS sans mourir, spacing, objectifs.
-- Support : vision avant objectif, roam timing, protection carry, engage/disengage.
+Priorités par rôle :
+Top = waves, trades, side lane, TP, pression, morts sur gank.
+Jungle = clear, pathing, tracking, objectifs, conversion kill -> objectif.
+Mid = prio, roam après push, influence jungle/sides, deaths évitables.
+ADC = farm utile, resets, mid game waves, DPS sans mourir, spacing, objectifs.
+Support = vision avant objectif, roam timing, protection carry, engage/disengage.
 
-Réponds UNIQUEMENT en JSON valide.
-Aucun markdown. Aucun texte avant ou après le JSON.
-Les textes doivent être courts, lisibles dans des cartes UI.
-
-Format exact :
+Réponds UNIQUEMENT en JSON valide. Aucun markdown. Aucun texte autour.
+Format compact exact :
 {
-  "diagnostic": {
-    "title": "2 à 4 mots",
-    "text": "Diagnostic coach en 2 phrases max."
-  },
+  "diagnostic": {"title":"2 à 4 mots","text":"Diagnostic critique en 2 phrases max."},
   "signals": [
-    { "label": "Stat", "value": "Valeur", "text": "Interprétation utile en 1 phrase." },
-    { "label": "Stat", "value": "Valeur", "text": "Interprétation utile en 1 phrase." },
-    { "label": "Stat", "value": "Valeur", "text": "Interprétation utile en 1 phrase." }
+    {"label":"Stat","value":"Valeur","text":"Ce que ça révèle en 1 phrase."},
+    {"label":"Stat","value":"Valeur","text":"Ce que ça révèle en 1 phrase."},
+    {"label":"Stat","value":"Valeur","text":"Ce que ça révèle en 1 phrase."}
   ],
-  "mainProblem": {
-    "title": "Problème principal",
-    "text": "Pourquoi c'est le vrai sujet à travailler en 2 phrases maximum."
-  },
+  "mainProblem": {"title":"Problème principal","text":"Pourquoi c'est prioritaire en 2 phrases max."},
   "axes": [
-    {
-      "icon": "target",
-      "title": "Titre court",
-      "problem": "Erreur probable en 1 phrase.",
-      "rule": "Règle simple à appliquer.",
-      "example": "Exemple concret en game."
-    },
-    {
-      "icon": "clock",
-      "title": "Titre court",
-      "problem": "Erreur probable en 1 phrase.",
-      "rule": "Règle simple à appliquer.",
-      "example": "Exemple concret en game."
-    },
-    {
-      "icon": "eye",
-      "title": "Titre court",
-      "problem": "Erreur probable en 1 phrase.",
-      "rule": "Règle simple à appliquer.",
-      "example": "Exemple concret en game."
-    }
+    {"title":"Titre court","mistake":"Erreur probable en 1 phrase.","whyBad":"Pourquoi ça coûte cher en 1 phrase.","fix":"Correction concrète en 1 phrase."},
+    {"title":"Titre court","mistake":"Erreur probable en 1 phrase.","whyBad":"Pourquoi ça coûte cher en 1 phrase.","fix":"Correction concrète en 1 phrase."},
+    {"title":"Titre court","mistake":"Erreur probable en 1 phrase.","whyBad":"Pourquoi ça coûte cher en 1 phrase.","fix":"Correction concrète en 1 phrase."}
   ],
-  "plan": {
-    "early": "Consigne 0-10 min en 1 phrase.",
-    "mid": "Consigne 10-20 min en 1 phrase.",
-    "late": "Consigne 20+ min en 1 phrase."
-  },
-  "exercise": {
-    "title": "Nom de l'exercice",
-    "goal": "Objectif mesurable sur 3 games.",
-    "measure": "Comment le joueur vérifie s'il a réussi."
-  },
-  "coachLine": "Phrase coach courte et directe."
+  "plan": {"early":"0-10 min : 1 consigne.","mid":"10-20 min : 1 consigne.","late":"20+ min : 1 consigne."},
+  "exercise": {"title":"Nom court","goal":"Objectif mesurable sur 3 games."},
+  "coachLine":"Phrase coach courte."
 }
 
-Contraintes strictes :
-- signals : exactement 3 éléments.
-- axes : exactement 3 éléments.
+Contraintes :
+- signals = exactement 3.
+- axes = exactement 3.
 - Pas de champ vide.
-- Pas de pavé.
-- Pas de répétition brute des stats.
-- Priorité aux corrections concrètes.`;
+- Phrases courtes.
+- Pas d'exemple long.
+- Pas de liste dans les valeurs.
+- Termine toujours le JSON. Toutes les accolades doivent être fermées.`;
 }
 
 function extractJson(text) {
   const raw = String(text || "").trim();
-
-  try {
-    return JSON.parse(raw);
-  } catch {}
+  try { return JSON.parse(raw); } catch {}
 
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   if (fenced) {
-    try {
-      return JSON.parse(fenced[1]);
-    } catch {}
+    try { return JSON.parse(fenced[1]); } catch {}
   }
 
   const first = raw.indexOf("{");
   const last = raw.lastIndexOf("}");
-
   if (first !== -1 && last !== -1 && last > first) {
-    try {
-      return JSON.parse(raw.slice(first, last + 1));
-    } catch {}
+    try { return JSON.parse(raw.slice(first, last + 1)); } catch {}
   }
 
   return null;
@@ -295,33 +272,22 @@ function fallbackStructuredReview(text) {
 
 app.post("/api/analyze", async (req, res) => {
   try {
-    if (!ai) {
-      return res.status(500).json({ error: "GEMINI_API_KEY manquante sur Render" });
-    }
+    if (!ai) return res.status(500).json({ error: "GEMINI_API_KEY manquante sur Render" });
 
     const { rank, role, queueType, queueLabel, queueId, matchData, context } = req.body;
-
     if (!matchData || !matchData.participant) {
       return res.status(400).json({ error: "matchData.participant requis" });
     }
 
     matchData.queueId = matchData.queueId || queueId;
-
-    const prompt = buildCoachPrompt({
-      rank,
-      role,
-      queueType,
-      queueLabel,
-      matchData,
-      context
-    });
+    const prompt = buildCoachPrompt({ rank, role, queueType, queueLabel, matchData, context });
 
     const geminiRes = await ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: prompt,
       config: {
         temperature: 0.3,
-        maxOutputTokens: 750,
+        maxOutputTokens: 900,
         responseMimeType: "application/json",
       },
     });
@@ -329,13 +295,11 @@ app.post("/api/analyze", async (req, res) => {
     const text = geminiRes.text || "";
     const parsed = extractJson(text) || fallbackStructuredReview(text);
 
-    res.json({
-      analysis: parsed,
-      review: parsed,
-      raw: text
-    });
+    // Compatibilité front V2 : on garde analysis, et on ajoute review pour la suite.
+    res.json({ analysis: parsed, review: parsed, raw: text });
   } catch (e) {
-    const message = String(e?.message || "Erreur Gemini");
+    const rawMessage = e?.message || "Erreur Gemini";
+    const message = String(rawMessage);
 
     if (message.includes("503") || message.includes("UNAVAILABLE") || message.includes("high demand")) {
       return res.status(503).json({
@@ -354,11 +318,7 @@ app.post("/api/analyze", async (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.json({
-    ok: true,
-    provider: "gemini",
-    model: GEMINI_MODEL
-  });
+  res.json({ ok: true, provider: "gemini", model: GEMINI_MODEL });
 });
 
 const PORT = process.env.PORT || 3001;
