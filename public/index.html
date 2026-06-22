@@ -3,137 +3,798 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LoL Coach</title>
+<title>LoL Coach — SoloQ Review</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #13151A; color: #E8E9ED; font-family: 'Inter', sans-serif; min-height: 100vh; padding: 24px 16px 60px; }
-  .wrap { max-width: 660px; margin: 0 auto; }
-  .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: .08em; color: #3FA9F5; }
-  .rank-badge { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; border: 1px solid #2A2D36; border-radius: 4px; padding: 3px 8px; }
-  h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 36px; line-height: 1.05; margin-bottom: 6px; }
-  .subtitle { color: #7A7E8C; font-size: 14px; margin-bottom: 20px; }
-  .tabs { display: flex; border-bottom: 1px solid #2A2D36; margin-bottom: 24px; }
-  .tab { background: none; border: none; color: #7A7E8C; font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 10px 4px; margin-right: 20px; cursor: pointer; border-bottom: 2px solid transparent; }
-  .tab.active { color: #E8E9ED; border-bottom-color: #3FA9F5; }
-  .panel { display: none; } .panel.active { display: block; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
-  .field { flex: 1; min-width: 140px; margin-bottom: 16px; }
-  .field.full { flex: none; width: 100%; }
-  label { display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; margin-bottom: 6px; letter-spacing: .03em; }
-  select, input, textarea { width: 100%; background: #1B1E26; border: 1px solid #2A2D36; color: #E8E9ED; border-radius: 6px; padding: 9px 10px; font-size: 14px; font-family: 'Inter', sans-serif; }
-  textarea { resize: vertical; line-height: 1.5; }
-  .btn { width: 100%; background: #3FA9F5; color: #0B0D11; border: none; border-radius: 6px; padding: 13px; font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 16px; cursor: pointer; margin-top: 6px; }
-  .btn:disabled { background: #26303D; color: #7A7E8C; cursor: not-allowed; }
-  .error { background: #2A1F1A; border: 1px solid #E8965A; color: #E8965A; border-radius: 6px; padding: 10px 12px; font-size: 12px; font-family: 'JetBrains Mono', monospace; word-break: break-word; margin-bottom: 12px; display: none; }
-  .info { background: #1A2030; border: 1px solid #2A2D36; color: #7A7E8C; border-radius: 6px; padding: 10px 12px; font-size: 12px; font-family: 'JetBrains Mono', monospace; margin-bottom: 12px; display: none; }
-  .game-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; margin-top: 24px; }
-  .game-item { background: #1B1E26; border: 1px solid #2A2D36; border-radius: 8px; padding: 12px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-  .game-item.selected { background: #1B2535; border-color: #3FA9F5; }
-  .game-champ { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 18px; }
-  .game-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; margin-top: 2px; }
+  :root {
+    --bg: #050509;
+    --bg-2: #090813;
+    --card: rgba(16, 14, 27, .78);
+    --card-strong: rgba(21, 18, 34, .92);
+    --line: rgba(151, 131, 255, .18);
+    --line-strong: rgba(151, 131, 255, .34);
+    --text: #F5F1FF;
+    --muted: #9B96AA;
+    --soft: #6F6A80;
+    --purple: #8B5CF6;
+    --purple-2: #D946EF;
+    --blue: #38BDF8;
+    --green: #34D399;
+    --red: #FB7185;
+    --orange: #F59E0B;
+    --shadow: 0 24px 80px rgba(0,0,0,.42);
+  }
 
-  .game-topline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .queue-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .04em; padding: 3px 7px; border-radius: 999px; border: 1px solid #2A2D36; color: #A8ABBA; background: #131722; white-space: nowrap; }
-  .queue-soloq { color: #C4B5FD; border-color: rgba(139, 92, 246, .45); background: rgba(139, 92, 246, .12); }
-  .queue-flex { color: #38BDF8; border-color: rgba(56, 189, 248, .45); background: rgba(56, 189, 248, .12); }
-  .queue-normal { color: #A8ABBA; border-color: rgba(168, 171, 186, .35); background: rgba(168, 171, 186, .08); }
-  .queue-aram { color: #F59E0B; border-color: rgba(245, 158, 11, .45); background: rgba(245, 158, 11, .12); }
-  .queue-other { color: #7A7E8C; }
-  .win { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4CAF7D; }
-  .loss { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E8965A; }
-  .context-section { display: none; margin-top: 8px; }
-  /* History */
-  .card-wrap { display: flex; gap: 12px; }
-  .card-rail { display: flex; flex-direction: column; align-items: center; width: 14px; }
-  .card-dot { width: 9px; height: 9px; border-radius: 50%; background: #3FA9F5; margin-top: 18px; flex-shrink: 0; }
-  .card-line { width: 1px; flex: 1; background: #2A2D36; margin-top: 4px; }
-  .card { flex: 1; margin-bottom: 18px; }
-  .card-header { display: flex; justify-content: space-between; align-items: baseline; cursor: pointer; padding-bottom: 4px; }
-  .card-champ { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 19px; margin-right: 10px; }
-  .card-meta-text { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; }
-  .card-date { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; white-space: nowrap; }
-  .card-body { background: #1B1E26; border: 1px solid #2A2D36; border-radius: 8px; padding: 16px; margin-top: 8px; display: none; }
-  .card-body.open { display: block; }
-  .analysis-text { white-space: pre-wrap; font-family: 'Inter', sans-serif; font-size: 14px; line-height: 1.6; color: #E8E9ED; }
-  .delete-btn { background: none; border: 1px solid #2A2D36; color: #7A7E8C; border-radius: 5px; padding: 6px 10px; font-size: 11px; font-family: 'JetBrains Mono', monospace; cursor: pointer; margin-top: 14px; }
-  .empty { color: #7A7E8C; font-size: 14px; text-align: center; padding: 40px 20px; border: 1px dashed #2A2D36; border-radius: 8px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 50% -10%, rgba(139, 92, 246, .42), transparent 34%),
+      radial-gradient(circle at 12% 16%, rgba(56, 189, 248, .16), transparent 28%),
+      radial-gradient(circle at 88% 20%, rgba(217, 70, 239, .18), transparent 24%),
+      linear-gradient(180deg, #050509 0%, #080711 45%, #040407 100%);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    padding: 20px 16px 72px;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 58px 58px;
+    mask-image: radial-gradient(circle at 50% 12%, black, transparent 62%);
+    opacity: .38;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; position: relative; z-index: 1; }
+
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 48px;
+    padding: 10px 12px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 999px;
+    background: rgba(7, 7, 12, .72);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 12px 48px rgba(0,0,0,.22);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+  }
+
+  .brand-mark {
+    width: 26px;
+    height: 26px;
+    border-radius: 9px;
+    background:
+      radial-gradient(circle at 35% 30%, #fff, transparent 18%),
+      radial-gradient(circle at 50% 55%, var(--purple-2), transparent 42%),
+      linear-gradient(135deg, var(--purple), #15101f);
+    box-shadow: 0 0 26px rgba(139, 92, 246, .75);
+  }
+
+  .tabs {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 999px;
+    background: rgba(255,255,255,.035);
+  }
+
+  .tab {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: .18s ease;
+  }
+
+  .tab.active {
+    color: var(--text);
+    background: rgba(139, 92, 246, .20);
+    box-shadow: inset 0 0 0 1px rgba(139, 92, 246, .25);
+  }
+
+  .hero {
+    text-align: center;
+    max-width: 820px;
+    margin: 0 auto 34px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: #C4B5FD;
+    border: 1px solid rgba(139, 92, 246, .34);
+    background: rgba(139, 92, 246, .12);
+    border-radius: 999px;
+    padding: 7px 11px;
+    margin-bottom: 18px;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--purple-2);
+    box-shadow: 0 0 12px var(--purple-2);
+  }
+
+  h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: clamp(48px, 8vw, 94px);
+    line-height: .88;
+    letter-spacing: -.035em;
+    margin-bottom: 18px;
+    text-wrap: balance;
+  }
+
+  .grad {
+    background: linear-gradient(90deg, #fff 0%, #E9D5FF 38%, #93C5FD 100%);
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+
+  .subtitle {
+    max-width: 660px;
+    margin: 0 auto 24px;
+    color: var(--muted);
+    font-size: 16px;
+    line-height: 1.55;
+  }
+
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .mini-note {
+    color: var(--soft);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 16px;
+    align-items: start;
+    margin-top: 24px;
+  }
+
+  .glass-card {
+    background: linear-gradient(180deg, rgba(24, 20, 39, .90), rgba(10, 9, 18, .86));
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(18px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 0%, rgba(139,92,246,.18), transparent 42%);
+  }
+
+  .card-inner { position: relative; z-index: 1; padding: 18px; }
+
+  .section-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .section-title h2,
+  .section-title h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 24px;
+    letter-spacing: -.015em;
+  }
+
+  .section-kicker {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: .08em;
+    color: var(--purple-2);
+    text-transform: uppercase;
+  }
+
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .field { flex: 1; min-width: 140px; margin-bottom: 14px; }
+  .field.full { flex: none; width: 100%; }
+
+  label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 7px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+
+  select, input, textarea {
+    width: 100%;
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.10);
+    color: var(--text);
+    border-radius: 12px;
+    padding: 12px 12px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: .18s ease;
+  }
+
+  select:focus, input:focus, textarea:focus {
+    border-color: rgba(139,92,246,.70);
+    box-shadow: 0 0 0 4px rgba(139,92,246,.12);
+  }
+
+  textarea { resize: vertical; line-height: 1.5; }
+
+  .btn {
+    border: none;
+    border-radius: 13px;
+    padding: 13px 16px;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: .18s ease;
+  }
+
+  .btn-primary {
+    color: #080711;
+    background: linear-gradient(90deg, #fff, #D8B4FE 55%, #7DD3FC);
+    box-shadow: 0 0 34px rgba(139, 92, 246, .28);
+  }
+
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 44px rgba(139, 92, 246, .44); }
+  .btn:disabled { opacity: .55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .btn-secondary {
+    color: var(--text);
+    background: rgba(255,255,255,.055);
+    border: 1px solid rgba(255,255,255,.12);
+  }
+
+  .btn-full { width: 100%; margin-top: 4px; }
+
+  .error, .info {
+    border-radius: 12px;
+    padding: 11px 12px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    word-break: break-word;
+    margin-bottom: 12px;
+    display: none;
+  }
+
+  .error {
+    background: rgba(251, 113, 133, .10);
+    border: 1px solid rgba(251, 113, 133, .34);
+    color: #FDA4AF;
+  }
+
+  .info {
+    background: rgba(56, 189, 248, .08);
+    border: 1px solid rgba(56, 189, 248, .22);
+    color: #BAE6FD;
+  }
+
+  .side-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-top: 14px;
+  }
+
+  .mini-card {
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.035);
+    border-radius: 14px;
+    padding: 12px;
+  }
+
+  .mini-card strong {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .mini-card span {
+    font-size: 11px;
+    color: var(--soft);
+  }
+
+  .empty-state {
+    min-height: 390px;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 24px;
+  }
+
+  .empty-orb {
+    width: 118px;
+    height: 118px;
+    border-radius: 50%;
+    margin: 0 auto 18px;
+    background:
+      radial-gradient(circle at 38% 30%, rgba(255,255,255,.82), transparent 13%),
+      radial-gradient(circle at 50% 50%, rgba(139,92,246,.52), transparent 42%),
+      conic-gradient(from 180deg, transparent, rgba(56,189,248,.72), rgba(217,70,239,.78), transparent);
+    filter: drop-shadow(0 0 42px rgba(139,92,246,.32));
+    opacity: .9;
+  }
+
+  .empty-state h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 34px;
+    margin-bottom: 8px;
+  }
+
+  .empty-state p {
+    color: var(--muted);
+    max-width: 420px;
+    line-height: 1.55;
+  }
+
+  .game-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .game-item {
+    position: relative;
+    background: rgba(255,255,255,.045);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 17px;
+    padding: 14px;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    transition: .18s ease;
+  }
+
+  .game-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(139,92,246,.42);
+    background: rgba(139,92,246,.08);
+  }
+
+  .game-item.selected {
+    background: rgba(139,92,246,.13);
+    border-color: rgba(139,92,246,.62);
+    box-shadow: 0 0 0 4px rgba(139,92,246,.08);
+  }
+
+  .game-topline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+
+  .game-champ {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .game-meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .game-result {
+    text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .08em;
+  }
+
+  .win { color: var(--green); }
+  .loss { color: var(--red); }
+
+  .queue-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    padding: 4px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.12);
+    color: #BDB7CB;
+    background: rgba(255,255,255,.045);
+  }
+
+  .queue-soloq {
+    color: #C4B5FD;
+    border-color: rgba(139, 92, 246, .50);
+    background: rgba(139, 92, 246, .14);
+  }
+
+  .queue-flex {
+    color: #7DD3FC;
+    border-color: rgba(56, 189, 248, .50);
+    background: rgba(56, 189, 248, .12);
+  }
+
+  .queue-normal {
+    color: #CBD5E1;
+    border-color: rgba(148, 163, 184, .30);
+    background: rgba(148, 163, 184, .08);
+  }
+
+  .queue-aram {
+    color: #FCD34D;
+    border-color: rgba(245, 158, 11, .45);
+    background: rgba(245, 158, 11, .12);
+  }
+
+  .queue-other { color: var(--soft); }
+
+  .context-section {
+    display: none;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .quick-context {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-bottom: 12px;
+  }
+
+  .chip {
+    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(255,255,255,.045);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 7px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: .18s ease;
+  }
+
+  .chip:hover {
+    color: var(--text);
+    border-color: rgba(139,92,246,.48);
+    background: rgba(139,92,246,.12);
+  }
+
+  .history-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .history-toolbar h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 44px;
+    line-height: .95;
+  }
+
+  .history-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .review-card {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(20,17,33,.88), rgba(11,10,18,.88));
+    border-radius: 22px;
+    overflow: hidden;
+    box-shadow: 0 18px 60px rgba(0,0,0,.24);
+  }
+
+  .review-head {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 14px;
+    align-items: center;
+    padding: 16px;
+    cursor: pointer;
+  }
+
+  .review-titleline {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .card-champ {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .card-meta-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .card-date {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--soft);
+    white-space: nowrap;
+  }
+
+  .review-body {
+    display: none;
+    padding: 0 16px 16px;
+  }
+
+  .review-body.open { display: block; }
+
+  .review-grid {
+    display: grid;
+    gap: 12px;
+  }
+
+  .analysis-section {
+    border: 1px solid rgba(255,255,255,.08);
+    background: rgba(255,255,255,.035);
+    border-radius: 16px;
+    padding: 15px;
+  }
+
+  .analysis-section h3 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: #F5F1FF;
+  }
+
+  .analysis-section p,
+  .analysis-section li {
+    color: #D8D4E6;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .analysis-section ul { padding-left: 18px; }
+  .analysis-section strong { color: #fff; }
+
+  .delete-btn {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.10);
+    color: var(--muted);
+    border-radius: 10px;
+    padding: 8px 11px;
+    font-size: 11px;
+    font-family: 'JetBrains Mono', monospace;
+    cursor: pointer;
+    margin-top: 12px;
+  }
+
+  .empty {
+    color: var(--muted);
+    font-size: 14px;
+    text-align: center;
+    padding: 48px 20px;
+    border: 1px dashed rgba(255,255,255,.14);
+    border-radius: 20px;
+    background: rgba(255,255,255,.025);
+  }
+
+  @media (max-width: 860px) {
+    .topbar { border-radius: 18px; align-items: flex-start; }
+    .brand span { display: none; }
+    .app-shell { grid-template-columns: 1fr; }
+    .hero { margin-bottom: 24px; }
+    .side-stats { grid-template-columns: 1fr; }
+    .review-head { grid-template-columns: 1fr; }
+    .card-date { white-space: normal; }
+  }
+
+  @media (max-width: 520px) {
+    body { padding: 12px 10px 56px; }
+    .topbar { margin-bottom: 34px; }
+    .tab { padding: 8px 9px; font-size: 10px; }
+    .hero-actions .btn { width: 100%; }
+    .card-inner { padding: 14px; }
+    .game-item { grid-template-columns: 1fr; }
+    .game-result { text-align: left; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div class="header-top">
-      <span class="eyebrow" id="eyebrow">COACH · ADC</span>
-      <span class="rank-badge" id="rankBadge">Maître</span>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <span>LoL Coach</span>
     </div>
-    <h1>Post-Game Review</h1>
-    <p class="subtitle">Analyse automatique via l'API Riot. Aucun copier-coller.</p>
+
+    <nav class="tabs">
+      <button class="tab active" onclick="switchTab('new')">Nouvelle review</button>
+      <button class="tab" onclick="switchTab('history')" id="historyTab">Historique (0)</button>
+    </nav>
   </header>
 
-  <nav class="tabs">
-    <button class="tab active" onclick="switchTab('new')">Nouvelle analyse</button>
-    <button class="tab" onclick="switchTab('history')" id="historyTab">Historique (0)</button>
-  </nav>
-
-  <!-- Nouvelle analyse -->
-  <div class="panel active" id="panel-new">
-    <div class="row">
-      <div class="field">
-        <label>RANG</label>
-        <select id="rank" onchange="updateBadges()">
-          <option>Fer</option><option>Bronze</option><option>Argent</option>
-          <option>Or</option><option>Platine</option><option>Émeraude</option>
-          <option>Diamant</option><option selected>Maître</option>
-          <option>Grandmaster</option><option>Challenger</option>
-        </select>
+  <main class="panel active" id="panel-new">
+    <section class="hero">
+      <div class="eyebrow" id="eyebrow">AI COACH · IRON TO CHALLENGER</div>
+      <h1><span class="grad">Review ta SoloQ</span><br>sans ouvrir la VOD.</h1>
+      <p class="subtitle">Connecte ton Riot ID, choisis une game récente et obtiens un diagnostic coach basé sur tes données Riot. Rapide, utile, orienté progression.</p>
+      <div class="hero-actions">
+        <button class="btn btn-primary" onclick="document.getElementById('gameName').focus()">Analyser une game</button>
+        <button class="btn btn-secondary" onclick="switchTab('history')">Voir l’historique</button>
       </div>
-      <div class="field">
-        <label>RÔLE</label>
-        <select id="role" onchange="updateBadges()">
-          <option>Top</option><option>Jungle</option><option>Mid</option>
-          <option selected>ADC</option><option>Support</option>
-        </select>
-      </div>
-    </div>
-    <div class="row">
-      <div class="field" style="flex:2">
-        <label>PSEUDO RIOT</label>
-        <input id="gameName" placeholder="ex: clochard trader" />
-      </div>
-      <div class="field" style="flex:1">
-        <label>TAG</label>
-        <input id="tagLine" value="EUW" />
-      </div>
-    </div>
+      <p class="mini-note">Analyse data Riot · SoloQ / Flex / Normal · pas une review VOD complète</p>
+    </section>
 
-    <div class="error" id="err1"></div>
-    <div class="info" id="info1"></div>
-    <button class="btn" id="btnLoad" onclick="loadGames()">Charger mes dernières parties →</button>
+    <section class="app-shell">
+      <div class="glass-card">
+        <div class="card-inner">
+          <div class="section-title">
+            <div>
+              <div class="section-kicker">Step 01</div>
+              <h2>Profil joueur</h2>
+            </div>
+          </div>
 
-    <!-- Liste des games -->
-    <div id="gameListSection" style="display:none">
-      <label style="margin-top:24px;display:block">SÉLECTIONNE LA GAME À ANALYSER</label>
-      <div class="game-list" id="gameList"></div>
+          <div class="row">
+            <div class="field">
+              <label>Rang</label>
+              <select id="rank" onchange="updateBadges()">
+                <option>Fer</option><option>Bronze</option><option>Argent</option>
+                <option>Or</option><option>Platine</option><option>Émeraude</option>
+                <option>Diamant</option><option selected>Maître</option>
+                <option>Grandmaster</option><option>Challenger</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Rôle</label>
+              <select id="role" onchange="updateBadges()">
+                <option>Top</option><option>Jungle</option><option>Mid</option>
+                <option selected>ADC</option><option>Support</option>
+              </select>
+            </div>
+          </div>
 
-      <div class="context-section" id="contextSection">
-        <div class="field full">
-          <label>TON RESSENTI SUR CETTE GAME (optionnel)</label>
-          <textarea id="context" rows="3" placeholder="ex: J'ai perdu ma lane early, du mal à rentrer dans les teamfights…"></textarea>
+          <div class="row">
+            <div class="field" style="flex:2">
+              <label>Pseudo Riot</label>
+              <input id="gameName" placeholder="ex: clochard trader" />
+            </div>
+            <div class="field" style="flex:1">
+              <label>Tag</label>
+              <input id="tagLine" value="EUW" />
+            </div>
+          </div>
+
+          <div class="error" id="err1"></div>
+          <div class="info" id="info1"></div>
+          <button class="btn btn-primary btn-full" id="btnLoad" onclick="loadGames()">Charger mes dernières parties →</button>
+
+          <div class="side-stats">
+            <div class="mini-card"><strong>10</strong><span>games récentes</span></div>
+            <div class="mini-card"><strong>30s</strong><span>review express</span></div>
+            <div class="mini-card"><strong>AI</strong><span>coach data</span></div>
+          </div>
         </div>
-        <div class="error" id="err2"></div>
-        <div class="info" id="info2"></div>
-        <button class="btn" id="btnAnalyze" onclick="analyzeGame()">Analyser cette partie</button>
       </div>
-    </div>
-  </div>
 
-  <!-- Historique -->
-  <div class="panel" id="panel-history">
-    <div id="historyList"></div>
-  </div>
+      <div class="glass-card">
+        <div class="card-inner">
+          <div id="emptyPreview" class="empty-state">
+            <div>
+              <div class="empty-orb"></div>
+              <h3>Charge tes games</h3>
+              <p>Les parties apparaîtront ici avec leur type : SoloQ, Flex ou Normal. Sélectionne ensuite la game à analyser.</p>
+            </div>
+          </div>
+
+          <div id="gameListSection" style="display:none">
+            <div class="section-title">
+              <div>
+                <div class="section-kicker">Step 02</div>
+                <h3>Sélectionne la game</h3>
+              </div>
+            </div>
+
+            <div class="game-list" id="gameList"></div>
+
+            <div class="context-section" id="contextSection">
+              <div class="section-title">
+                <div>
+                  <div class="section-kicker">Step 03</div>
+                  <h3>Contexte rapide</h3>
+                </div>
+              </div>
+
+              <label>Que veux-tu comprendre sur cette game ?</label>
+              <div class="quick-context">
+                <button class="chip" onclick="addContext('J’ai gagné ma lane mais je n’ai pas su convertir mon avance.')">Stomp lane, pas converti</button>
+                <button class="chip" onclick="addContext('J’ai perdu ma lane et je ne sais pas comment revenir.')">Lane perdue</button>
+                <button class="chip" onclick="addContext('Je me suis senti inutile en mid game.')">Useless mid game</button>
+                <button class="chip" onclick="addContext('J’ai trop die et je veux comprendre pourquoi.')">Trop de deaths</button>
+                <button class="chip" onclick="addContext('Je ne comprends pas pourquoi on a perdu cette game.')">Pourquoi lose ?</button>
+              </div>
+
+              <div class="field full">
+                <textarea id="context" rows="3" placeholder="Optionnel : ajoute ton ressenti sur CETTE game uniquement…"></textarea>
+              </div>
+              <div class="error" id="err2"></div>
+              <div class="info" id="info2"></div>
+              <button class="btn btn-primary btn-full" id="btnAnalyze" onclick="analyzeGame()">Lancer la review coach →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <main class="panel" id="panel-history">
+    <div class="history-toolbar">
+      <div>
+        <div class="section-kicker">Review archive</div>
+        <h2>Historique</h2>
+      </div>
+      <button class="btn btn-secondary" onclick="switchTab('new')">Nouvelle review</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+  </main>
 </div>
 
 <script>
@@ -153,17 +814,20 @@
     document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
     document.getElementById("panel-"+t).classList.add("active");
     if (t === "history") renderHistory();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function updateBadges() {
-    document.getElementById("eyebrow").textContent = "COACH · " + document.getElementById("role").value.toUpperCase();
-    document.getElementById("rankBadge").textContent = document.getElementById("rank").value;
+    const role = document.getElementById("role").value.toUpperCase();
+    const rank = document.getElementById("rank").value.toUpperCase();
+    document.getElementById("eyebrow").textContent = "AI COACH · IRON TO CHALLENGER";
   }
 
   function showErr(id, msg) {
     const el = document.getElementById(id);
     el.textContent = msg; el.style.display = msg ? "block" : "none";
   }
+
   function showInfo(id, msg) {
     const el = document.getElementById(id);
     el.textContent = msg; el.style.display = msg ? "block" : "none";
@@ -186,6 +850,23 @@
     };
   }
 
+  function formatDuration(seconds) {
+    const min = Math.floor(seconds / 60);
+    const sec = seconds % 60;
+    return `${min}m${sec.toString().padStart(2, "0")}s`;
+  }
+
+  function getCsPerMin(p, seconds) {
+    const cs = (p.totalMinionsKilled || 0) + (p.neutralMinionsKilled || 0);
+    return (cs / (seconds / 60)).toFixed(1);
+  }
+
+  function addContext(text) {
+    const el = document.getElementById("context");
+    el.value = el.value.trim() ? `${el.value.trim()} ${text}` : text;
+    el.focus();
+  }
+
   async function loadGames() {
     const gameName = document.getElementById("gameName").value.trim();
     const tagLine = document.getElementById("tagLine").value.trim();
@@ -200,6 +881,7 @@
       const ids = await apiFetch(`/api/matches?puuid=${puuid}&platform=${PLATFORM}&count=10`);
       showInfo("info1", "Chargement des détails…");
       const details = await Promise.all(ids.map(id => apiFetch(`/api/match/${id}?platform=${PLATFORM}`)));
+
       recentGames = details.map((m, i) => {
         const p = m.info.participants.find(x => x.puuid === puuid);
         const queue = getQueueLabel(m.info.queueId);
@@ -210,7 +892,10 @@
           kills: p.kills,
           deaths: p.deaths,
           assists: p.assists,
-          duration: Math.floor(m.info.gameDuration / 60) + "m" + (m.info.gameDuration % 60) + "s",
+          duration: formatDuration(m.info.gameDuration),
+          csPerMin: getCsPerMin(p, m.info.gameDuration),
+          visionScore: p.visionScore,
+          damage: p.totalDamageDealtToChampions,
           queueId: m.info.queueId,
           queueLabel: queue.label,
           queueType: queue.type,
@@ -218,8 +903,10 @@
           rawMatch: m
         };
       });
+
       showInfo("info1", "");
       renderGameList();
+      document.getElementById("emptyPreview").style.display = "none";
       document.getElementById("gameListSection").style.display = "block";
     } catch(e) {
       showErr("err1", e.message);
@@ -235,12 +922,12 @@
       <div class="game-item" id="gi-${g.matchId}" onclick="selectGame('${g.matchId}')">
         <div>
           <div class="game-topline">
-            <span class="game-champ">${g.championName}</span>
+            <span class="game-champ">${escapeHtml(g.championName)}</span>
             <span class="queue-badge ${g.queueClass}">${g.queueLabel}</span>
           </div>
-          <div class="game-meta">${g.kills}/${g.deaths}/${g.assists} · ${g.duration}</div>
+          <div class="game-meta">${g.kills}/${g.deaths}/${g.assists} · ${g.duration} · ${g.csPerMin} CS/min · ${g.visionScore} vision · ${Math.round(g.damage/1000)}k dmg</div>
         </div>
-        <div class="${g.win ? 'win' : 'loss'}">${g.win ? "VICTOIRE" : "DÉFAITE"}</div>
+        <div class="game-result ${g.win ? 'win' : 'loss'}">${g.win ? "VICTOIRE" : "DÉFAITE"}</div>
       </div>`).join("");
   }
 
@@ -265,8 +952,6 @@
       enemies,
       gameDuration: game.rawMatch.info.gameDuration,
       queueId: game.queueId,
-      queueLabel: game.queueLabel,
-      queueType: game.queueType,
     };
 
     showErr("err2", ""); showInfo("info2", "Analyse en cours…");
@@ -281,6 +966,7 @@
           role: document.getElementById("role").value,
           queueType: game.queueType,
           queueLabel: game.queueLabel,
+          queueId: game.queueId,
           context: document.getElementById("context").value,
           matchData,
         }),
@@ -294,8 +980,12 @@
         champion: p.championName,
         win: p.win,
         queueLabel: game.queueLabel,
-        queueType: game.queueType,
         queueClass: game.queueClass,
+        kda: `${p.kills}/${p.deaths}/${p.assists}`,
+        duration: game.duration,
+        csPerMin: game.csPerMin,
+        visionScore: p.visionScore,
+        damage: p.totalDamageDealtToChampions,
         analysis: result.analysis,
       };
       history.unshift(entry);
@@ -303,9 +993,9 @@
       showInfo("info2", "");
       switchTab("history");
       renderHistory(entry.id);
-      // reset
       selectedMatchId = null;
       document.getElementById("gameListSection").style.display = "none";
+      document.getElementById("emptyPreview").style.display = "grid";
       document.getElementById("contextSection").style.display = "none";
       document.getElementById("context").value = "";
     } catch(e) {
@@ -328,39 +1018,94 @@
   function renderHistory(openId) {
     const container = document.getElementById("historyList");
     if (history.length === 0) {
-      container.innerHTML = '<div class="empty">Aucune game analysée. Lance ta première analyse.</div>';
+      container.innerHTML = '<div class="empty">Aucune game analysée. Lance ta première review pour créer ton historique.</div>';
       return;
     }
-    container.innerHTML = history.map((g, i) => {
+
+    container.innerHTML = history.map((g) => {
       const d = new Date(g.date);
       const dateStr = d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short"});
       const timeStr = d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"});
+      const queueBadge = g.queueLabel ? `<span class="queue-badge ${g.queueClass || 'queue-other'}">${g.queueLabel}</span>` : "";
+      const stats = [
+        g.kda ? `${g.kda}` : null,
+        g.duration ? `${g.duration}` : null,
+        g.csPerMin ? `${g.csPerMin} CS/min` : null,
+        g.visionScore !== undefined ? `${g.visionScore} vision` : null
+      ].filter(Boolean).join(" · ");
+
       return `
-      <div class="card-wrap">
-        <div class="card-rail">
-          <div class="card-dot"></div>
-          ${i < history.length-1 ? '<div class="card-line"></div>' : ''}
-        </div>
-        <div class="card">
-          <div class="card-header" onclick="toggleCard('${g.id}')">
-            <div>
-              <span class="card-champ">${g.champion}</span>
-              <span class="card-meta-text">${g.role} · ${g.rank}${g.queueLabel ? ' · ' + g.queueLabel : ''}</span>
+      <article class="review-card">
+        <div class="review-head" onclick="toggleCard('${g.id}')">
+          <div>
+            <div class="review-titleline">
+              <span class="card-champ">${escapeHtml(g.champion || "Game")}</span>
+              ${queueBadge}
+              <span class="${g.win ? 'win' : 'loss'} card-meta-text">${g.win ? "VICTOIRE" : "DÉFAITE"}</span>
             </div>
-            <span class="card-date">${dateStr} · ${timeStr}</span>
+            <div class="card-meta-text">${escapeHtml(g.role || "")} · ${escapeHtml(g.rank || "")}${stats ? " · " + escapeHtml(stats) : ""}</div>
           </div>
-          <div class="card-body ${openId===g.id?'open':''}" id="cb-${g.id}">
-            <div class="analysis-text">${g.analysis}</div>
-            <button class="delete-btn" onclick="deleteEntry('${g.id}')">Supprimer</button>
-          </div>
+          <span class="card-date">${dateStr} · ${timeStr}</span>
         </div>
-      </div>`;
+        <div class="review-body ${openId===g.id?'open':''}" id="cb-${g.id}">
+          ${formatAnalysis(g.analysis || "")}
+          <button class="delete-btn" onclick="deleteEntry('${g.id}')">Supprimer</button>
+        </div>
+      </article>`;
     }).join("");
+  }
+
+  function formatAnalysis(text) {
+    const safe = escapeHtml(text);
+    const sections = safe.split(/\n(?=##\s+)/g).filter(Boolean);
+
+    if (sections.length <= 1) {
+      return `<div class="analysis-section"><p>${safe.replace(/\n/g, "<br>")}</p></div>`;
+    }
+
+    const html = sections.map(section => {
+      const cleaned = section.trim();
+      const lines = cleaned.split("\n");
+      const title = lines[0].replace(/^##\s*/, "").trim();
+      const body = lines.slice(1).join("\n").trim();
+      return `<section class="analysis-section">
+        <h3>${title}</h3>
+        <div>${markdownLite(body)}</div>
+      </section>`;
+    }).join("");
+
+    return `<div class="review-grid">${html}</div>`;
+  }
+
+  function markdownLite(text) {
+    let html = text
+      .replace(/^###\s+(.+)$/gm, "<h3>$1</h3>")
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/^\*\s+(.+)$/gm, "<li>$1</li>")
+      .replace(/^- (.+)$/gm, "<li>$1</li>")
+      .replace(/\n{2,}/g, "</p><p>")
+      .replace(/\n/g, "<br>");
+
+    html = html.replace(/(<li>.*?<\/li>(?:<br>)?)+/g, (match) => {
+      return "<ul>" + match.replace(/<br>/g, "") + "</ul>";
+    });
+
+    if (!html.startsWith("<")) html = `<p>${html}</p>`;
+    return html;
+  }
+
+  function escapeHtml(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
   }
 
   function toggleCard(id) {
     const el = document.getElementById("cb-"+id);
-    el.classList.toggle("open");
+    if (el) el.classList.toggle("open");
   }
 
   function deleteEntry(id) {
@@ -369,7 +1114,6 @@
     renderHistory();
   }
 
-  // Init
   updateBadges();
   saveHistory();
 </script>
