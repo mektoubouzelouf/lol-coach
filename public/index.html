@@ -34,6 +34,14 @@
   .game-item.selected { background: #1B2535; border-color: #3FA9F5; }
   .game-champ { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 18px; }
   .game-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #7A7E8C; margin-top: 2px; }
+
+  .game-topline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .queue-badge { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: .04em; padding: 3px 7px; border-radius: 999px; border: 1px solid #2A2D36; color: #A8ABBA; background: #131722; white-space: nowrap; }
+  .queue-soloq { color: #C4B5FD; border-color: rgba(139, 92, 246, .45); background: rgba(139, 92, 246, .12); }
+  .queue-flex { color: #38BDF8; border-color: rgba(56, 189, 248, .45); background: rgba(56, 189, 248, .12); }
+  .queue-normal { color: #A8ABBA; border-color: rgba(168, 171, 186, .35); background: rgba(168, 171, 186, .08); }
+  .queue-aram { color: #F59E0B; border-color: rgba(245, 158, 11, .45); background: rgba(245, 158, 11, .12); }
+  .queue-other { color: #7A7E8C; }
   .win { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4CAF7D; }
   .loss { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #E8965A; }
   .context-section { display: none; margin-top: 8px; }
@@ -161,6 +169,23 @@
     el.textContent = msg; el.style.display = msg ? "block" : "none";
   }
 
+  function getQueueLabel(queueId) {
+    const queues = {
+      400: { label: "NORMAL DRAFT", type: "Normal", className: "queue-normal" },
+      430: { label: "NORMAL BLIND", type: "Normal", className: "queue-normal" },
+      490: { label: "QUICKPLAY", type: "Normal", className: "queue-normal" },
+      420: { label: "SOLOQ", type: "SoloQ", className: "queue-soloq" },
+      440: { label: "FLEX", type: "Flexible", className: "queue-flex" },
+      450: { label: "ARAM", type: "ARAM", className: "queue-aram" }
+    };
+
+    return queues[queueId] || {
+      label: `QUEUE ${queueId}`,
+      type: "Autre",
+      className: "queue-other"
+    };
+  }
+
   async function loadGames() {
     const gameName = document.getElementById("gameName").value.trim();
     const tagLine = document.getElementById("tagLine").value.trim();
@@ -177,7 +202,21 @@
       const details = await Promise.all(ids.map(id => apiFetch(`/api/match/${id}?platform=${PLATFORM}`)));
       recentGames = details.map((m, i) => {
         const p = m.info.participants.find(x => x.puuid === puuid);
-        return { matchId: ids[i], championName: p.championName, win: p.win, kills: p.kills, deaths: p.deaths, assists: p.assists, duration: Math.floor(m.info.gameDuration/60)+"m"+(m.info.gameDuration%60)+"s", rawMatch: m };
+        const queue = getQueueLabel(m.info.queueId);
+        return {
+          matchId: ids[i],
+          championName: p.championName,
+          win: p.win,
+          kills: p.kills,
+          deaths: p.deaths,
+          assists: p.assists,
+          duration: Math.floor(m.info.gameDuration / 60) + "m" + (m.info.gameDuration % 60) + "s",
+          queueId: m.info.queueId,
+          queueLabel: queue.label,
+          queueType: queue.type,
+          queueClass: queue.className,
+          rawMatch: m
+        };
       });
       showInfo("info1", "");
       renderGameList();
@@ -195,7 +234,10 @@
     container.innerHTML = recentGames.map(g => `
       <div class="game-item" id="gi-${g.matchId}" onclick="selectGame('${g.matchId}')">
         <div>
-          <div class="game-champ">${g.championName}</div>
+          <div class="game-topline">
+            <span class="game-champ">${g.championName}</span>
+            <span class="queue-badge ${g.queueClass}">${g.queueLabel}</span>
+          </div>
           <div class="game-meta">${g.kills}/${g.deaths}/${g.assists} · ${g.duration}</div>
         </div>
         <div class="${g.win ? 'win' : 'loss'}">${g.win ? "VICTOIRE" : "DÉFAITE"}</div>
@@ -222,6 +264,9 @@
       team,
       enemies,
       gameDuration: game.rawMatch.info.gameDuration,
+      queueId: game.queueId,
+      queueLabel: game.queueLabel,
+      queueType: game.queueType,
     };
 
     showErr("err2", ""); showInfo("info2", "Analyse en cours…");
@@ -234,6 +279,8 @@
         body: JSON.stringify({
           rank: document.getElementById("rank").value,
           role: document.getElementById("role").value,
+          queueType: game.queueType,
+          queueLabel: game.queueLabel,
           context: document.getElementById("context").value,
           matchData,
         }),
@@ -246,6 +293,9 @@
         role: document.getElementById("role").value,
         champion: p.championName,
         win: p.win,
+        queueLabel: game.queueLabel,
+        queueType: game.queueType,
+        queueClass: game.queueClass,
         analysis: result.analysis,
       };
       history.unshift(entry);
@@ -295,7 +345,7 @@
           <div class="card-header" onclick="toggleCard('${g.id}')">
             <div>
               <span class="card-champ">${g.champion}</span>
-              <span class="card-meta-text">${g.role} · ${g.rank}</span>
+              <span class="card-meta-text">${g.role} · ${g.rank}${g.queueLabel ? ' · ' + g.queueLabel : ''}</span>
             </div>
             <span class="card-date">${dateStr} · ${timeStr}</span>
           </div>
