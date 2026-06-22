@@ -24,6 +24,7 @@
     --red: #FB7185;
     --orange: #F59E0B;
     --shadow: 0 24px 80px rgba(0,0,0,.42);
+    color-scheme: dark;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -254,20 +255,48 @@
 
   select, input, textarea {
     width: 100%;
-    background: rgba(255,255,255,.045);
-    border: 1px solid rgba(255,255,255,.10);
+    background: rgba(18, 16, 34, .88);
+    border: 1px solid rgba(139, 92, 246, .22);
     color: var(--text);
     border-radius: 12px;
     padding: 12px 12px;
     font-size: 14px;
     font-family: 'Inter', sans-serif;
     outline: none;
-    transition: .18s ease;
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
   }
+
+  input::placeholder, textarea::placeholder { color: #8f88a8; }
 
   select:focus, input:focus, textarea:focus {
     border-color: rgba(139,92,246,.70);
     box-shadow: 0 0 0 4px rgba(139,92,246,.12);
+    background: rgba(22, 19, 40, .96);
+  }
+
+  select {
+    color-scheme: dark;
+    cursor: pointer;
+  }
+
+  select option {
+    background: #171428;
+    color: #F5F1FF;
+  }
+
+  select optgroup {
+    background: #171428;
+    color: #B9B2D0;
+  }
+
+  select option:checked {
+    background: #4C2D95;
+    color: #FFFFFF;
+  }
+
+  select option:hover, select option:focus {
+    background: #31204F;
+    color: #FFFFFF;
   }
 
   textarea { resize: vertical; line-height: 1.5; }
