@@ -925,6 +925,9 @@
     .compact-meta { grid-template-columns: 1fr; }
   }
 
+
+  .axis-block.mistake { border-left-color: rgba(251, 113, 133, .7); }
+  .axis-block.mistake strong { color: #FB7185; }
 </style>
 </head>
 <body>
@@ -1256,7 +1259,9 @@
         csPerMin: game.csPerMin,
         visionScore: p.visionScore,
         damage: p.totalDamageDealtToChampions,
-        analysis: result.analysis,
+        review: result.review || result.analysis,
+        analysis: result.analysis || result.review || "",
+        raw: result.raw || "",
       };
       history.unshift(entry);
       saveHistory();
@@ -1318,7 +1323,7 @@
           <span class="card-date">${dateStr} · ${timeStr}</span>
         </div>
         <div class="review-body ${openId===g.id?'open':''}" id="cb-${g.id}">
-          ${formatAnalysis(g.analysis || "")}
+          ${formatAnalysis(g.review || g.analysis || "")}
           <button class="delete-btn" onclick="deleteEntry('${g.id}')">Supprimer</button>
         </div>
       </article>`;
@@ -1413,11 +1418,11 @@
         <div class="axis-grid">
           ${axes.map(axis => `
             <article class="axis-card gradient-card">
-              <div class="axis-icon">${iconForAxis(axis.icon)}</div>
+              <div class="axis-icon">${iconForAxis(axis.icon || axis.title)}</div>
               <h4>${escapeHtml(axis.title || "Axe")}</h4>
-              <div class="axis-block"><strong>Problème</strong><p>${escapeHtml(axis.problem || "")}</p></div>
-              <div class="axis-block"><strong>Règle</strong><p>${escapeHtml(axis.rule || "")}</p></div>
-              <div class="axis-block"><strong>Exemple</strong><p>${escapeHtml(axis.example || "")}</p></div>
+              <div class="axis-block mistake"><strong>Erreur probable</strong><p>${escapeHtml(axis.mistake || axis.problem || "À préciser")}</p></div>
+              <div class="axis-block"><strong>Pourquoi c’est grave</strong><p>${escapeHtml(axis.whyBad || axis.impact || axis.rule || "À préciser")}</p></div>
+              <div class="axis-block"><strong>Correction</strong><p>${escapeHtml(axis.fix || axis.correction || axis.example || "À appliquer prochaine game")}</p></div>
             </article>
           `).join("")}
         </div>
@@ -1452,8 +1457,8 @@
         <div class="review-kicker">Exercice de progression</div>
         <h3>${escapeHtml(exercise.title || "Exercice")}</h3>
         <div class="exercise-meta compact-meta">
-          <div class="problem-item"><strong>Objectif</strong><span>${escapeHtml(exercise.goal || "")}</span></div>
-          <div class="problem-item"><strong>Mesure</strong><span>${escapeHtml(exercise.measure || "")}</span></div>
+          <div class="problem-item"><strong>Objectif</strong><span>${escapeHtml(exercise.goal || "Objectif sur 3 games")}</span></div>
+          ${exercise.measure ? `<div class="problem-item"><strong>Mesure</strong><span>${escapeHtml(exercise.measure)}</span></div>` : ""}
         </div>
       </section>` : "";
 
