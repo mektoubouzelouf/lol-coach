@@ -861,6 +861,41 @@
     .game-item { grid-template-columns: 1fr; }
     .game-result { text-align: left; }
   }
+
+  .gradient-card,
+  .gradient-frame {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .gradient-card::before,
+  .gradient-frame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, rgba(139,92,246,.9), rgba(56,189,248,.55), rgba(217,70,239,.55));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .axis-card,
+  .signal-card,
+  .timeline-card {
+    backdrop-filter: blur(18px);
+  }
+
+  .compact-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 780px) {
+    .compact-meta { grid-template-columns: 1fr; }
+  }
+
 </style>
 </head>
 <body>
@@ -879,7 +914,7 @@
 
   <main class="panel active" id="panel-new">
     <section class="hero">
-      <div class="eyebrow" id="eyebrow">AI COACH · IRON TO CHALLENGER</div>
+      <div class="eyebrow" id="eyebrow">AI COACH · IRON TO CHALLENGER · MAÎTRE</div>
       <h1><span class="grad">Review ta SoloQ</span><br>sans ouvrir la VOD.</h1>
       <p class="subtitle">Connecte ton Riot ID, choisis une game récente et obtiens un diagnostic coach basé sur tes données Riot. Rapide, utile, orienté progression.</p>
       <div class="hero-actions">
@@ -1304,33 +1339,43 @@
 
   function renderStructuredReview(data) {
     const diagnostic = data.diagnostic || {};
-    const keySignals = Array.isArray(data.keySignals) ? data.keySignals.slice(0, 3) : [];
-    const axes = Array.isArray(data.improvementAxes) ? data.improvementAxes.slice(0, 3) : [];
+    const signals = Array.isArray(data.signals)
+      ? data.signals.slice(0, 3)
+      : (Array.isArray(data.keySignals) ? data.keySignals.slice(0, 3) : []);
+
+    const axes = Array.isArray(data.axes)
+      ? data.axes.slice(0, 3)
+      : (Array.isArray(data.improvementAxes) ? data.improvementAxes.slice(0, 3) : []);
+
     const vodChecks = Array.isArray(data.vodChecks) ? data.vodChecks.slice(0, 2) : [];
     const problem = data.mainProblem || {};
-    const plan = data.gamePlan || {};
+    const plan = data.plan || data.gamePlan || {};
     const exercise = data.exercise || null;
 
-    const signalsHtml = keySignals.length ? `
-      <section class="signal-grid">
-        ${keySignals.map(signal => `
-          <article class="signal-card">
-            <div class="signal-label">${escapeHtml(signal.label || "Signal")}</div>
-            <div class="signal-value">${escapeHtml(signal.value || "—")}</div>
-            <p class="signal-text">${escapeHtml(signal.takeaway || "")}</p>
-          </article>
-        `).join("")}
+    const diagnosticText = diagnostic.text || diagnostic.summary || "Analyse structurée de la game.";
+
+    const signalsHtml = signals.length ? `
+      <section>
+        <h3 class="review-subtitle">3 signaux clés</h3>
+        <div class="signal-grid">
+          ${signals.map(signal => `
+            <article class="signal-card gradient-card">
+              <div class="signal-label">${escapeHtml(signal.label || "Signal")}</div>
+              <div class="signal-value">${escapeHtml(signal.value || "—")}</div>
+              <p class="signal-text">${escapeHtml(signal.text || signal.takeaway || "")}</p>
+            </article>
+          `).join("")}
+        </div>
       </section>` : "";
 
+    const problemTitle = problem.title || problem.problem || "Problème principal";
+    const problemText = problem.text || problem.priorityReason || "À préciser avec une nouvelle analyse.";
+
     const problemHtml = `
-      <section class="problem-card">
-        <h3>Le vrai problème à travailler</h3>
-        <div class="problem-grid">
-          <div class="problem-item"><strong>Problème</strong><span>${escapeHtml(problem.problem || "Non précisé")}</span></div>
-          <div class="problem-item"><strong>Priorité</strong><span>${escapeHtml(problem.priorityReason || "Non précisé")}</span></div>
-          <div class="problem-item"><strong>Coût en SoloQ</strong><span>${escapeHtml(problem.cost || "Non précisé")}</span></div>
-          <div class="problem-item"><strong>Meilleur joueur</strong><span>${escapeHtml(problem.betterPlayer || "Non précisé")}</span></div>
-        </div>
+      <section class="problem-card gradient-frame">
+        <div class="review-kicker">Focus progression</div>
+        <h3>${escapeHtml(problemTitle)}</h3>
+        <p>${escapeHtml(problemText)}</p>
       </section>`;
 
     const axesHtml = axes.length ? `
@@ -1338,10 +1383,10 @@
         <h3 class="review-subtitle">3 axes de correction</h3>
         <div class="axis-grid">
           ${axes.map(axis => `
-            <article class="axis-card">
+            <article class="axis-card gradient-card">
               <div class="axis-icon">${iconForAxis(axis.icon)}</div>
               <h4>${escapeHtml(axis.title || "Axe")}</h4>
-              <div class="axis-block"><strong>Erreur probable</strong><p>${escapeHtml(axis.problem || "")}</p></div>
+              <div class="axis-block"><strong>Problème</strong><p>${escapeHtml(axis.problem || "")}</p></div>
               <div class="axis-block"><strong>Règle</strong><p>${escapeHtml(axis.rule || "")}</p></div>
               <div class="axis-block"><strong>Exemple</strong><p>${escapeHtml(axis.example || "")}</p></div>
             </article>
@@ -1374,24 +1419,22 @@
       </section>`;
 
     const exerciseHtml = exercise ? `
-      <section class="exercise-card">
+      <section class="exercise-card gradient-frame">
         <div class="review-kicker">Exercice de progression</div>
         <h3>${escapeHtml(exercise.title || "Exercice")}</h3>
-        <div class="exercise-meta">
+        <div class="exercise-meta compact-meta">
           <div class="problem-item"><strong>Objectif</strong><span>${escapeHtml(exercise.goal || "")}</span></div>
           <div class="problem-item"><strong>Mesure</strong><span>${escapeHtml(exercise.measure || "")}</span></div>
-          <div class="problem-item"><strong>Bénéfice</strong><span>${escapeHtml(exercise.benefit || "")}</span></div>
         </div>
       </section>` : "";
 
-    const rawHtml = data.raw ? `<pre class="raw-review">${escapeHtml(data.raw)}</pre>` : "";
     const coachLine = data.coachLine ? `<div class="coach-line">${escapeHtml(data.coachLine)}</div>` : "";
 
     return `<div class="structured-review">
-      <section class="diagnostic-panel">
+      <section class="diagnostic-panel gradient-frame">
         <div class="review-kicker">Diagnostic coach</div>
         <h3>${escapeHtml(diagnostic.title || "Review coach")}</h3>
-        <p>${escapeHtml(diagnostic.summary || "Analyse structurée de la game.")}</p>
+        <p>${escapeHtml(diagnosticText)}</p>
       </section>
       ${signalsHtml}
       ${problemHtml}
@@ -1400,13 +1443,12 @@
       ${vodHtml}
       ${exerciseHtml}
       ${coachLine}
-      ${rawHtml}
     </div>`;
   }
 
   function renderTimelineCard(title, items) {
-    const arr = Array.isArray(items) ? items.slice(0, 2) : [];
-    return `<article class="timeline-card">
+    const arr = Array.isArray(items) ? items.slice(0, 2) : (items ? [items] : []);
+    return `<article class="timeline-card gradient-card">
       <h4>${escapeHtml(title)}</h4>
       <ul>${arr.map(item => `<li>${escapeHtml(item)}</li>`).join("") || "<li>À définir selon la game.</li>"}</ul>
     </article>`;
